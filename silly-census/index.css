@@ -1,0 +1,164 @@
+/* global */
+@import url('https://fonts.googleapis.com/css2?family=Cal+Sans&family=Modak&display=swap');
+
+:root {
+    --main: #bf0811;
+    --black: #242423;
+    --white: #F5EFED;
+}
+
+* { font-family: 'Cal Sans'; }
+
+h1, h2 { 
+    font-family: 'Modak';
+    margin: 0px;
+    color: var(--main);
+    font-weight: 500;
+    font-width: 100%;
+}
+
+body {
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    
+    background: linear-gradient(to bottom right, 
+    var(--main),
+    var(--main),
+    #f62937
+    );
+
+    display: flex;
+    flex-direction: row;
+    color: var(--black);
+}
+
+p span { color: var(--main); }
+
+/* top of page*/
+
+img {
+    position: absolute;
+    top: -90px;
+    left: -40px;
+    height: 350px;
+    width: 350px;
+}
+
+form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 400px;
+    max-height: 80%;
+    overflow: scroll;
+
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 25px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+form input {
+    padding: 15px;
+    border-radius: 5px;
+    font-weight: 2rem;
+    outline: none;
+    border: var(--main) 2px solid;
+}
+
+a {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    color: var(--white);
+    text-decoration: none;
+    padding: 2px;
+    border-radius: 5px;
+    transition: all 0.3s ease-in-out;
+}
+
+a:hover { background-color: var(--white); color: var(--main); }
+
+button {
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+  background: var(--main);
+  color: var(--white);
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: scale 0.2s ease-in-out;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 239, 237, 0.4),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.65s ease-in-out;
+}
+
+button:hover::before { left: 150%; }
+button:active { scale: 0.97; }
+
+
+
+
+/* Grid Layout for Checkboxes */
+.friends-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+/* Container Card */
+.checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Hide Native Checkbox */
+.census-checkbox {
+    display: none;
+}
+
+/* Custom Checkbox Design */
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #333;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Checked State Styles */
+.census-checkbox:checked + .checkbox-custom {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.census-checkbox:checked ~ .checkbox-label {
+    font-weight: bold;
+}

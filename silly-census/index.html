@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="logomark.png">
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="toasts.css">
+    <link rel="stylesheet" href="../footer.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="api.js" defer></script>
+    <script src="toasts.js" defer></script>
+    <title>Silly Census • stashy.tools</title>
+</head>
+<body>
+    <img src="wordmark.png" alt="Silly Census">
+    
+    <form id="code-entry-form" onsubmit="event.preventDefault(); enterForm(document.getElementById('formCode').value);">
+        <h1 id="title">enter your form code in!</h1>
+        <input autocomplete="off" id="formCode" type="text" placeholder="Enter your form code.">
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="census-content"></div>
+
+    <a href="dashboard.html">Click me to create or edit your Census!</a>
+    <div id="alert-holder"></div>
+</body>
+</html>

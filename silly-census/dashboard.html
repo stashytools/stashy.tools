@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="logomark.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="toasts.css">
+    <link rel="stylesheet" href="../footer.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="toasts.js" defer></script>
+    <title>Silly Census • stashy.tools</title>
+
+    <style>
+        /* input, select, button {
+            color: #111111 !important;
+            background-color: #ffffff !important;
+            border: 1px solid #ccc;
+            padding: 6px;
+        }
+        select option {
+            color: #111111 !important;
+            background-color: #ffffff !important;
+        } */
+        
+        #limit-warning-section {
+            background-color: #ffcccc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--main);
+            margin-bottom: 20px;
+        }
+
+        #limit-warning-section p { color: var(--black) }
+    </style>
+</head>
+<body>
+    <img src="wordmark.png" alt="Silly Census">
+    
+    <main>
+    <h1 id="dash-title">Create Your Silly Census</h1>
+
+    <nav>
+        <button class="editMode active" type="button" id="btn-mode-create">create a census</button>
+        <button class="editMode" type="button" id="btn-mode-edit">edit your census</button>
+    </nav>
+    <br>
+
+    <div id="limit-warning-section" style="display: none;">
+        <h2>You can't create a new Census before removing your previous one.</h2>
+        <p>You already have an active census. If you want to create a new census, you must first delete the current census.</p>
+        <button class="buttonStyle" type="button" id="btn-delete-previous">Delete Census</button>
+    </div>
+
+    <div id="edit-login-section" style="display: none;">
+        <label>Census ID</label>
+        <input type="text" id="login-code">
+        <br><br>
+        <label>Census Password</label>
+        <input type="password" id="login-pass">
+        <br><br>
+        <button class="buttonStyle" type="button" id="btn-load-census">Edit Census</button>
+    </div>
+
+    <form id="census-form">
+        <label>Game Code</label>
+        <input style="width: 80%;" type="text" id="game-code" readonly required>
+        <button class="buttonStyle" id="regen-code-btn" type="button" onclick="document.getElementById('game-code').value = generateAlphanumericCode(); saveDraft();" style="display: inline-block; width: 10%;">↻</button>
+        <br><br>
+
+        <div id="password-fields">
+            <label>Census Password</label>
+            <input type="password" id="owner-pass">
+            <br><br>
+
+            <label>Confirm Password</label>
+            <input type="password" id="confirm-pass">
+            <br><br>
+        </div>
+
+        <label>Release Date & Time:</label>
+        <input type="datetime-local" id="release-date" required>
+        <br><br>
+
+        <h2>Friends List</h2>
+        <input type="text" id="friend-input" placeholder="Type a friends name, then press ENTER!">
+        <div id="friends-chip-list" style="margin-top: 8px;"></div>
+        <br>
+
+        <h2>Questions</h2>
+        <div id="questions-list"></div>
+        <br>
+        <button class="buttonStyle" type="button" id="add-q-btn">Add Question</button>
+        <br><br>
+
+        <button class="buttonStyle" type="submit" id="save-btn">Publish Census</button>
+        <button class="buttonStyle" type="button" id="delete-btn" style="display:none;">Delete Census</button>
+    </form>
+</main>
+
+<a href="../silly-census/">Head back to answering censuses!</a>
+<div id="alert-holder"></div>
+    <script>
+const SUPABASE_URL = 'https://argeyfcbyhgrsiobsoko.supabase.co/';
+const SUPABASE_KEY = 'sb_publishable_h8uJKRKLrEtv249ProXrCQ_CbW0yYwZ';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let isEditMode = false;
+let friends = [];
+let questionCount = 0;
+
+function generateAlphanumericCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+
+
+
+
+
+
+
+function ensureCopyUrlButtonExists() {
+    const codeInput = document.getElementById('game-code');
+    if (!document.getElementById('copy-url-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'copy-url-btn';
+        btn.type = 'button';
+        btn.className = 'submit-census-btn'; // Reuses your styling
+        btn.textContent = '📋 Copy Share URL';
+        btn.style.marginLeft = '10px';
+        btn.style.padding = '8px 15px';
+        
+        btn.onclick = () => {
+            const code = codeInput.value;
+            // Constructs the URL dynamically based on where the site is hosted
+            const url = window.location.origin + window.location.pathname.replace('dashboard.html', 'index.html') + '?id=' + code;
+            
+            navigator.clipboard.writeText(url).then(() => {
+                loadToast('Share link copied to clipboard!');
+            }).catch(err => {
+                loadToast('Failed to copy link.');
+            });
+        };
+        
+        // Insert it right after the game code input
+        codeInput.parentNode.insertBefore(btn, codeInput.nextSibling);
+    }
+}
+
+
+
+
+
+
+async function switchMode(mode) {
+    isEditMode = (mode === 'edit');
+    const editSection = document.getElementById('edit-login-section');
+    const censusForm = document.getElementById('census-form');
+    const passFields = document.getElementById('password-fields');
+    const dashTitle = document.getElementById('dash-title');
+    const saveBtn = document.getElementById('save-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const limitWarning = document.getElementById('limit-warning-section');
+
+    limitWarning.style.display = 'none';
+
+    if (isEditMode) {
+        dashTitle.textContent = 'Sign In & Edit Census';
+        editSection.style.display = 'block';
+        censusForm.style.display = 'none';
+
+        document.getElementById('btn-mode-edit').classList.add('active');
+        document.getElementById('btn-mode-create').classList.remove('active');
+        if (document.getElementById('regen-code-btn')) document.getElementById('regen-code-btn').style.display = 'inline-block';
+
+    } else {
+        dashTitle.textContent = 'Create Your Silly Census';
+        editSection.style.display = 'none';
+        passFields.style.display = 'block';
+        deleteBtn.style.display = 'none';
+        saveBtn.textContent = 'Publish Census';
+
+        if (document.getElementById('regen-code-btn')) document.getElementById('regen-code-btn').style.display = 'inline-block';
+        document.getElementById('btn-mode-edit').classList.remove('active');
+        document.getElementById('btn-mode-create').classList.add('active');
+
+
+        checkSingleCensusLimit();
+    }
+}
+
+function checkSingleCensusLimit() {
+    const ownedCode = localStorage.getItem('my_created_census');
+    const censusForm = document.getElementById('census-form');
+    const limitWarning = document.getElementById('limit-warning-section');
+
+    if (ownedCode && !isEditMode) {
+        limitWarning.style.display = 'block';
+        censusForm.style.display = 'none';
+        
+        document.getElementById('btn-delete-previous').onclick = async () => {
+            await db.from('censuses').delete().eq('id', ownedCode);
+            localStorage.removeItem('my_created_census');
+            limitWarning.style.display = 'none';
+            resetFormForCreation();
+        };
+    } else if (!isEditMode) {
+        resetFormForCreation();
+    }
+}
+
+function resetFormForCreation() {
+    document.getElementById('census-form').style.display = 'block';
+    
+    // Check for Draft
+    const savedDraft = localStorage.getItem('census_draft');
+    if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        document.getElementById('game-code').value = draft.code || generateAlphanumericCode();
+        document.getElementById('release-date').value = draft.releaseDate || '';
+        friends = draft.friends || [];
+        document.getElementById('questions-list').innerHTML = '';
+        questionCount = 0;
+        
+        if (draft.questions && draft.questions.length > 0) {
+            draft.questions.forEach(q => addQuestionRow(q));
+        } else {
+            addQuestionRow(); // Add 1 blank row default
+        }
+    } else {
+        document.getElementById('game-code').value = generateAlphanumericCode();
+        document.getElementById('owner-pass').value = '';
+        document.getElementById('confirm-pass').value = '';
+        document.getElementById('release-date').value = '';
+        document.getElementById('questions-list').innerHTML = '';
+        friends = [];
+        questionCount = 0;
+        addQuestionRow();
+    }
+    
+    renderFriendsList();
+}
+
+function saveDraft() {
+    if (isEditMode) return; // Don't overwrite draft while editing live database
+    const draft = {
+        code: document.getElementById('game-code').value,
+        friends: friends,
+        questions: [],
+        releaseDate: document.getElementById('release-date').value
+    };
+    document.querySelectorAll('.q-block').forEach(block => {
+        draft.questions.push({
+            text: block.querySelector('.q-text').value,
+            type: block.querySelector('.q-type').value,
+            required: block.querySelector('.q-required').checked,
+            maxSelect: parseInt(block.querySelector('.q-max').value) || 1
+        });
+    });
+    localStorage.setItem('census_draft', JSON.stringify(draft));
+}
+
+// Add event listener to form to auto-save draft on any input
+document.getElementById('census-form').addEventListener('input', saveDraft);
+
+function renderFriendsList() {
+    const chipList = document.getElementById('friends-chip-list');
+    chipList.innerHTML = '';
+    friends.forEach((f, idx) => {
+        const span = document.createElement('span');
+        // Your custom inline styles requested:
+        span.style.marginRight = '8px';
+        span.style.padding = '4px 8px';
+        span.style.border = '2px solid var(--main)';
+        span.style.background = 'rgba(191, 8, 17, .3)';
+        span.style.borderRadius = '5px';
+        span.style.display = 'inline-block';
+        span.style.color = 'var(--main)';
+        
+        span.innerHTML = `${f} <button type="button" style="background:none; border:none; color:inherit; font-weight:bold; cursor:pointer;" onclick="removeFriend(${idx})">x</button>`;
+        chipList.appendChild(span);
+    });
+    saveDraft();
+}
+
+function removeFriend(idx) {
+    friends.splice(idx, 1);
+    renderFriendsList();
+}
+
+function toggleMaxSelect(selectEl) {
+    const maxBox = selectEl.parentElement.querySelector('.max-select-box');
+    if (maxBox) {
+        maxBox.style.display = selectEl.value === 'friend_select' ? 'flex' : 'none';
+    }
+    saveDraft();
+}
+
+// Add this helper to recalculate numbers when a question is deleted
+function updateQuestionNumbers() {
+    const blocks = document.querySelectorAll('.q-block');
+    blocks.forEach((block, index) => {
+        const numSpan = block.querySelector('.q-number-display');
+        if (numSpan) {
+            numSpan.textContent = (index + 1) + ')';
+        }
+    });
+    questionCount = blocks.length;
+}
+
+// Add this helper to handle clicking your new custom type toggle
+function selectQuestionType(element, type) {
+    const container = element.parentElement;
+    const buttons = container.querySelectorAll('.type-toggle-btn');
+    const hiddenInput = container.querySelector('.q-type');
+    
+    buttons.forEach(btn => {
+        btn.style.color = '#777';
+        btn.style.borderBottom = 'none';
+    });
+    
+    // Apply active styles to clicked button
+    element.style.color = '#bf0811';
+    element.style.borderBottom = '3px solid #bf0811';
+    
+    // Update the hidden input value so the database saves it correctly
+    hiddenInput.value = type;
+    
+    // Show/hide the Max Select box based on choice
+    const maxBox = container.parentElement.querySelector('.max-select-box');
+    if (maxBox) {
+        maxBox.style.display = type === 'friend_select' ? 'flex' : 'none';
+    }
+    saveDraft();
+}
+
+function addQuestionRow(data = null) {
+    questionCount++;
+    const qDiv = document.createElement('div');
+    qDiv.className = 'q-block';
+    
+    qDiv.style.display = 'flex';
+    qDiv.style.flexDirection = 'column';
+    qDiv.style.gap = '15px';
+    qDiv.style.padding = '20px';
+    qDiv.style.border = '1px solid #ddd';
+    qDiv.style.marginBottom = '15px';
+    qDiv.style.borderRadius = '8px';
+    qDiv.style.backgroundColor = '#fff';
+    qDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+
+    // Determine starting state
+    const qType = data ? data.type : 'friend_select';
+    const isFriend = qType === 'friend_select';
+
+    qDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="q-number-display" style="font-size: 32px; font-weight: 900; color: #111;">${questionCount})</span>
+            <input type="text" class="q-text" value="${data ? data.text : ''}" placeholder="Who is most likely to..." style="flex: 1; padding: 12px; font-size: 16px; border: none; border-bottom: 3px solid #111; border-radius: 0; background: transparent; outline: none;">
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                
+                <div style="display: flex; gap: 15px; align-items: center; font-weight: bold; font-size: 18px; cursor: pointer;">
+                    <span class="type-toggle-btn" onclick="selectQuestionType(this, 'friend_select')" style="padding-bottom: 2px; ${isFriend ? 'color: #bf0811; border-bottom: 3px solid #bf0811;' : 'color: #777;'}">select friends</span>
+                    
+                    <span class="type-toggle-btn" onclick="selectQuestionType(this, 'text')" style="padding-bottom: 2px; ${!isFriend ? 'color: #bf0811; border-bottom: 3px solid #bf0811;' : 'color: #777;'}">text</span>
+                    
+                    <input type="hidden" class="q-type" value="${qType}">
+                </div>
+
+                <label style="display:flex; align-items:center; gap:8px; font-weight: bold; font-size: 16px;">
+                    <input type="checkbox" class="q-required" ${data ? (data.required ? 'checked' : '') : 'checked'} style="width: 20px; height: 20px;">
+                </label>
+
+                <span class="max-select-box" style="display: ${isFriend ? 'flex' : 'none'}; align-items:center; gap:8px; font-weight: bold; font-size: 16px;">
+                    max
+                    <input type="number" class="q-max" min="1" value="${data ? (data.maxSelect || 1) : 1}" style="width: 30px; padding: 6px; border: 2px solid var(--main); border-radius: 6px;">
+                </span>
+            </div>
+
+            <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0;" onclick="this.closest('.q-block').remove(); updateQuestionNumbers(); saveDraft();" aria-label="Delete">🗑️</button>
+        </div>
+    `;
+    document.getElementById('questions-list').appendChild(qDiv);
+    saveDraft();
+}
+
+
+async function loadCensusForEdit() {
+    const code = document.getElementById('login-code').value.trim().toUpperCase();
+    const pass = document.getElementById('login-pass').value.trim();
+
+    if (!code || !pass) {
+        loadToast('Please enter both code and password.');
+        return;
+    }
+
+    const { data: census, error } = await db.from('censuses').select('*').eq('id', code).single();
+
+    if (error || !census || census.owner_password !== pass) {
+        loadToast('Invalid Code or Password!');
+        return;
+    }
+
+    document.getElementById('game-code').value = census.id;
+    document.getElementById('owner-pass').value = census.owner_password;
+    document.getElementById('password-fields').style.display = 'none'; 
+
+    const d = new Date(census.release_date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); 
+    document.getElementById('release-date').value = d.toISOString().slice(0, 16);
+
+    friends = census.friends || [];
+    renderFriendsList();
+
+    document.getElementById('questions-list').innerHTML = '';
+    questionCount = 0;
+    census.questions.forEach(q => addQuestionRow(q));
+
+    document.getElementById('edit-login-section').style.display = 'none';
+    document.getElementById('census-form').style.display = 'block';
+    document.getElementById('save-btn').textContent = 'Update Census';
+    document.getElementById('delete-btn').style.display = 'inline-block';
+    
+    if (document.getElementById('regen-code-btn')) document.getElementById('regen-code-btn').style.display = 'none';
+    
+    loadToast('Logged in! You can now edit your census.');
+}
+
+async function deleteCensus() {
+    const code = document.getElementById('game-code').value;
+    if (confirm(`Are you sure you want to delete census #${code}?`)) {
+        await db.from('censuses').delete().eq('id', code);
+        localStorage.removeItem('my_created_census');
+        loadToast('Census deleted.');
+        location.reload();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-mode-create').addEventListener('click', () => switchMode('create'));
+    document.getElementById('btn-mode-edit').addEventListener('click', () => switchMode('edit'));
+    document.getElementById('btn-load-census').addEventListener('click', loadCensusForEdit);
+    document.getElementById('add-q-btn').addEventListener('click', () => addQuestionRow());
+    document.getElementById('delete-btn').addEventListener('click', deleteCensus);
+
+    
+    const formEl = document.getElementById('census-form');
+    formEl.setAttribute('novalidate', true);
+    
+    formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('game-code').value;
+        const localDateTime = document.getElementById('release-date').value;
+        if (!localDateTime) {
+            loadToast('Please set a release date and time!');
+            return;
+        }
+    });
+
+    const friendInput = document.getElementById('friend-input');
+    friendInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const name = friendInput.value.trim();
+            if (name && !friends.includes(name)) {
+                friends.push(name);
+                renderFriendsList();
+            }
+            friendInput.value = '';
+        }
+    });
+
+    document.getElementById('census-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const code = document.getElementById('game-code').value;
+        const localDateTime = document.getElementById('release-date').value;
+        const releaseDate = new Date(localDateTime).toISOString(); 
+        const pass = document.getElementById('owner-pass').value; 
+
+        // Time Validations
+        const now = Date.now();
+        const releaseTimeMs = new Date(releaseDate).getTime();
+        const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+        if (releaseTimeMs < now) {
+            loadToast('Cannot publish! Release time must be in the future.');
+            return;
+        }
+        if (releaseTimeMs > now + oneWeekMs) {
+            loadToast('Cannot publish! Release time cannot be more than a week away.');
+            return;
+        }
+
+        if (!isEditMode) {
+            const confirmPass = document.getElementById('confirm-pass').value;
+            if (!pass) {
+                loadToast('Please enter a secret password.');
+                return;
+            }
+            if (pass !== confirmPass) {
+                loadToast('Passwords do not match!');
+                return;
+            }
+        }
+
+        if (friends.length === 0) {
+            loadToast('You need to add at least one friend!');
+            return;
+        }
+
+        const qBlocks = document.querySelectorAll('.q-block');
+        const questions = [];
+        let invalidQuestions = false;
+        let invalidMax = false;
+
+        qBlocks.forEach((block, idx) => {
+            const qText = block.querySelector('.q-text').value.trim();
+            const qType = block.querySelector('.q-type').value;
+            const qMax = parseInt(block.querySelector('.q-max').value) || 1;
+
+            if (!qText) invalidQuestions = true;
+            if (qType === 'friend_select' && qMax > friends.length) invalidMax = true;
+
+            questions.push({
+                id: idx,
+                text: qText,
+                type: qType,
+                required: block.querySelector('.q-required').checked,
+                maxSelect: qMax
+            });
+        });
+
+        if (invalidQuestions) {
+            loadToast('You have a question row missing its text! Please fill it out.');
+            return;
+        }
+        if (invalidMax) {
+            loadToast('One of your questions lets people select more friends than you actually added to the list!');
+            return;
+        }
+
+        let payload = {
+            id: code,
+            owner_password: pass, 
+            release_date: releaseDate,
+            friends: friends,
+            questions: questions
+        };
+
+        const { error } = await db.from('censuses').upsert([payload]);
+
+        if (error) {
+            loadToast('Failed to save census: ' + error.message);
+        } else {
+            localStorage.setItem('my_created_census', code);
+            localStorage.removeItem('census_draft'); // Clear draft on successful publish
+            loadToast(`Census ${isEditMode ? 'updated' : 'published'}! Code: ${code}`);
+            
+            setTimeout(() => {
+                window.location.href = `index.html?id=${code}`;
+            }, 1000); // Small delay so they can read the toast before redirect
+        }
+    });
+
+    checkSingleCensusLimit();
+});
+    </script>
+</body>
+</html>
