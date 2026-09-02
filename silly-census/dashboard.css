@@ -111,14 +111,14 @@ input[type=checkbox] {
   display: inline-block;
   vertical-align: middle;
 
-  background-image: url('warning-un.svg');
+  background-image: url('../silly-census/warning-un.svg');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 
 input[type=checkbox]:checked {
-  background-image: url('warning.svg');
+  background-image: url('../silly-census/warning.svg');
 }
 
  a {

@@ -242,13 +242,13 @@ async function renderGraphResults(census, container) {
     form.className = 'census-results-form';
 
     if (error || !responses || responses.length === 0) {
-        form.innerHTML = '<h2>Census Closed - Final Results</h2><p>No responses were submitted for this census.</p>';
+        form.innerHTML = '<h2>Census Final Results</h2><p>No responses were submitted for this census.</p>';
         container.appendChild(form);
         return;
     }
 
     const titleHeader = document.createElement('h2');
-    titleHeader.textContent = 'Census Closed - Final Results';
+    titleHeader.textContent = 'Census Final Results';
     form.appendChild(titleHeader);
 
     census.questions.forEach((q, idx) => {
@@ -292,7 +292,6 @@ async function renderGraphResults(census, container) {
             return; // Skip chart rendering for text fields
         }
 
-        // --- Chart Rendering for Friend Selects ---
         const counts = {};
         responses.forEach(r => {
             const ans = r.answers[qKey];
@@ -301,7 +300,6 @@ async function renderGraphResults(census, container) {
             }
         });
 
-        // Smaller chart height
         const chartWrapper = document.createElement('div');
         chartWrapper.style.position = 'relative';
         chartWrapper.style.height = '180px'; // Made graph smaller
