@@ -289,7 +289,7 @@ async function renderGraphResults(census, container) {
             
             qCard.appendChild(listDiv);
             form.appendChild(qCard);
-            return; // Skip chart rendering for text fields
+            return;
         }
 
         const counts = {};
