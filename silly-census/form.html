@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Answer • Silly Census</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="toasts.css" />
+  <script src="toasts.js"></script>
+  <script src="api.js"></script>  
+
+  <link rel="icon" href="images/favicon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;800&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+  h2 { color: var(--main) !important; }
+  input[type=checkbox] { accent-color: #A80000; }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="site-header wrap">
+        <img src="images/logo.png" class="logo-mark" alt="Silly Census" onclick="window.location.href='index.html'" style="cursor:pointer;" />
+    </header>
+
+    <section class="section wrap" style="padding-top: 2rem;">
+        <h1 id="title" style="text-align: center; margin-bottom: 2rem; font-size: 3rem;">Loading Census...</h1>
+        
+        <div id="census-content"></div> 
+    </section>
+  </main>
+
+  <div id="alert-holder"></div>
+</body>
+</html>

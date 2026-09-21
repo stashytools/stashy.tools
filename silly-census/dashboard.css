@@ -100,26 +100,7 @@ input {
     border: var(--main) 2px solid;
 }
 
-input[type=checkbox] {
-    appearance: none;
-  -webkit-appearance: none;
-  
-  width: 24px;
-  height: 24px;
-  border: none;
-  cursor: pointer;
-  display: inline-block;
-  vertical-align: middle;
 
-  background-image: url('../silly-census/not-required.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-input[type=checkbox]:checked {
-  background-image: url('../silly-census/required.svg');
-}
 
  a {
     position: fixed;

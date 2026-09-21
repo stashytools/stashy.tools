@@ -1,9 +1,7 @@
-// 1. CONFIGURATION
 const SUPABASE_URL = 'https://argeyfcbyhgrsiobsoko.supabase.co/';
 const SUPABASE_KEY = 'sb_publishable_h8uJKRKLrEtv249ProXrCQ_CbW0yYwZ';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Custom Chart.js Plugin to draw labels inside the bars
 const insideLabelsPlugin = {
     id: 'insideLabelsPlugin',
     afterDatasetsDraw(chart) {
@@ -14,31 +12,25 @@ const insideLabelsPlugin = {
         
         chart.getDatasetMeta(0).data.forEach((bar, index) => {
             const label = data.labels[index];
-            const xPos = x.getPixelForValue(0) + 10; // 10px from the left edge
-            ctx.fillStyle = '#ffffff'; // White text inside the bar
-            ctx.fillText(label, xPos, bar.y + 1); // +1px for visual center alignment
+            const xPos = x.getPixelForValue(0) + 10;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, xPos, bar.y + 1);
         });
         ctx.restore();
     }
 };
 
-// 2. HELPER FUNCTIONS
 function cleanUrlError(message) {
     loadToast(message);
-    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-    
     const title = document.getElementById('title');
-    const form = document.getElementById('code-entry-form');
     const content = document.getElementById('census-content');
 
-    if (title) title.textContent = 'enter your form code in!';
-    if (form) form.style.display = 'block';
-    
+    if (title) title.textContent = 'Oops!';
     if (content) {
         content.innerHTML = `
-            <div style="text-align: center; margin-top: 30px;">
-                <button type="button" class="submit-census-btn" onclick="window.location.href='index.html'">Go Back</button>
+            <div class="surface-card code-card" style="text-align: center;">
+                <h2>${message}</h2>
+                <button type="button" class="btn-pop secondary" style="margin-top: 20px;" onclick="window.location.href='../silly-census/'">Go Back Home</button>
             </div>
         `;
     }
@@ -49,21 +41,8 @@ function enterForm(code) {
         loadToast('Please enter a valid form code.');
         return;
     }
-    window.location.search = `?id=${encodeURIComponent(code.trim().toUpperCase())}`;
+    window.location.href = `form?id=${encodeURIComponent(code.trim().toUpperCase())}`;
 }
-
-// 3. MAIN INITIALIZATION
-document.addEventListener('DOMContentLoaded', async () => {
-    const fiveDaysAgo = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000)).toISOString();
-    await db.from('censuses').delete().lt('release_date', fiveDaysAgo);
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const formCode = urlParams.get('id');
-
-    if (formCode) {
-        await loadCensusView(formCode.toUpperCase());
-    }
-});
 
 function getTimeRemaining(releaseDateIso) {
     const diff = new Date(releaseDateIso).getTime() - Date.now();
@@ -80,6 +59,18 @@ function getTimeRemaining(releaseDateIso) {
 
     return parts.join(', ');
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const fiveDaysAgo = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000)).toISOString();
+    await db.from('censuses').delete().lt('release_date', fiveDaysAgo);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const formCode = urlParams.get('id');
+
+    if (formCode) {
+        await loadCensusView(formCode.toUpperCase());
+    }
+});
 
 async function loadCensusView(code) {
     const { data: census, error } = await db.from('censuses').select('*').eq('id', code).single();
@@ -98,12 +89,10 @@ async function loadCensusView(code) {
         return;
     }
 
-    const entryForm = document.getElementById('code-entry-form');
     const title = document.getElementById('title');
     const contentDiv = document.getElementById('census-content');
 
-    if (entryForm) entryForm.style.display = 'none';
-    if (title) title.textContent = `Silly Census #${census.id}`;
+    if (title) title.textContent = `Census #${census.id}`;
     if (contentDiv) contentDiv.innerHTML = '';
 
     if (Date.now() >= releaseTime) {
@@ -117,13 +106,16 @@ function renderAnsweringGridForm(census, container) {
     const answered = JSON.parse(localStorage.getItem('answered_censuses') || '[]');
     const form = document.createElement('form');
     form.id = 'active-survey-form';
+    form.noValidate = true;
 
     if (answered.includes(census.id)) {
         const timeRemaining = getTimeRemaining(census.release_date);
         form.innerHTML = `
-            <h2>You have already answered this census!</h2>
-            <p>The results will be made public in <strong>${timeRemaining}</strong>.</p>
-            <button type="button" class="buttonStyle" style="margin-top: 20px;" onclick="window.location.href='../silly-census/'">Back to Home</button>
+            <div class="surface-card code-card" style="text-align: center;">
+                <h2>You have already answered this census!</h2>
+                <p style="margin-top: 10px; font-size: 1.1rem;">The results will be made public in <strong>${timeRemaining}</strong>.</p>
+                <button type="button" class="btn-pop secondary" style="margin-top: 20px;" onclick="window.location.href='../silly-census/'">Back to Home</button>
+            </div>
         `;
         container.appendChild(form);
         return;
@@ -131,44 +123,48 @@ function renderAnsweringGridForm(census, container) {
 
     census.questions.forEach((q, idx) => {
         const qDiv = document.createElement('div');
-        qDiv.className = 'question-card';
+        qDiv.className = 'surface-card code-card';
+        qDiv.style.marginBottom = '20px';
         
-        const isReq = q.required ? ' *' : '';
-        const maxText = (q.type === 'friend_select' && q.maxSelect > 1) ? ` (Select up to ${q.maxSelect})` : '';
-
-        qDiv.innerHTML = `<p class="question-title"><strong>${idx + 1}. ${q.text}${isReq}${maxText}</strong></p>`;
+        const isReq = q.required ? ' <span style="color: #bf0811;">*</span>' : '';
+        qDiv.innerHTML = `<h3 style="font-size: 1.5rem; margin-bottom: 15px;">${idx + 1}. ${q.text}${isReq}</h3>`;
 
         if (q.type === 'friend_select') {
             const grid = document.createElement('div');
-            grid.className = 'friends-checkbox-grid';
+            grid.style.display = 'flex';
+            grid.style.flexWrap = 'wrap';
+            grid.style.gap = '10px';
 
             census.friends.forEach(friend => {
                 const label = document.createElement('label');
-                label.className = 'checkbox-card';
+                label.className = 'question-chip';
+                label.style.cursor = 'pointer';
+                label.style.display = 'inline-flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
 
                 const input = document.createElement('input');
                 input.type = 'checkbox';
-                input.className = 'census-checkbox';
                 input.name = `q_${idx}`;
                 input.value = friend;
+                input.style.width = '18px';
+                input.style.height = '18px';
 
+                
                 input.addEventListener('change', () => {
-                    const checkedCount = grid.querySelectorAll(`input[name="q_${idx}"]:checked`).length;
-                    if (checkedCount > (q.maxSelect || 1)) {
-                        input.checked = false;
-                        loadToast(`You can only select up to ${q.maxSelect || 1} friend(s) here!`);
+                    if (input.checked) {
+                        label.style.background = 'oklch(0.968 0.008 60 / 30%)';
+                        label.style.borderColor = 'oklch(0.968 0.008 60)';
+                    } else {
+                        label.style.background = 'oklch(0.968 0.008 60 / 10%)';
+                        label.style.borderColor = 'oklch(0.968 0.008 60 / 40%)';
                     }
                 });
 
-                const customBox = document.createElement('span');
-                customBox.className = 'checkbox-custom';
-
                 const labelText = document.createElement('span');
-                labelText.className = 'checkbox-label';
                 labelText.textContent = friend;
 
                 label.appendChild(input);
-                label.appendChild(customBox);
                 label.appendChild(labelText);
                 grid.appendChild(label);
             });
@@ -176,8 +172,10 @@ function renderAnsweringGridForm(census, container) {
         } else {
             const textInput = document.createElement('input');
             textInput.type = 'text';
-            textInput.className = 'text-answer-input';
+            textInput.className = 'code-input';
             textInput.name = `q_${idx}`;
+            textInput.placeholder = "Type your answer...";
+            textInput.style.marginTop = '0';
             if (q.required) textInput.required = true;
             qDiv.appendChild(textInput);
         }
@@ -187,7 +185,9 @@ function renderAnsweringGridForm(census, container) {
 
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
-    submitBtn.className = 'submit-census-btn';
+    submitBtn.className = 'btn-pop small';
+    submitBtn.style.width = '100%';
+    submitBtn.style.marginTop = '10px';
     submitBtn.textContent = 'Submit Answers';
     form.appendChild(submitBtn);
 
@@ -225,8 +225,11 @@ function renderAnsweringGridForm(census, container) {
             localStorage.setItem('answered_censuses', JSON.stringify(answered));
             const timeRemaining = getTimeRemaining(census.release_date);
             form.innerHTML = `
-                <h2>Thank you! Your answers have been recorded.</h2>
-                <p>The results will be made public in <strong>${timeRemaining}</strong>.</p>
+                <div class="surface-card code-card" style="text-align: center;">
+                    <h2>Thank you! Your answers are locked in.</h2>
+                    <p style="margin-top: 10px; font-size: 1.1rem;">The results will be made public in <strong>${timeRemaining}</strong>.</p>
+                    <button type="button" class="btn-pop secondary" style="margin-top: 20px;" onclick="window.location.href='../silly-census/'">Back to Home</button>
+                </div>
             `;
         }
     });
@@ -239,33 +242,38 @@ async function renderGraphResults(census, container) {
 
     const form = document.createElement('form');
     form.id = 'active-survey-form';
-    form.className = 'census-results-form';
 
     if (error || !responses || responses.length === 0) {
-        form.innerHTML = '<h2>Census Final Results</h2><p>No responses were submitted for this census.</p>';
+        form.innerHTML = `
+            <div class="surface-card code-card" style="text-align: center;">
+                <h2>Census Closed</h2>
+                <p style="margin-top: 10px;">No responses were submitted for this census.</p>
+                <button type="button" class="btn-pop secondary" style="margin-top: 20px;" onclick="window.location.href='../silly-census/'">Back to Home</button>
+            </div>
+        `;
         container.appendChild(form);
         return;
     }
 
     const titleHeader = document.createElement('h2');
-    titleHeader.textContent = 'Census Final Results';
+    titleHeader.textContent = 'Final Results';
+    titleHeader.style.marginBottom = '20px';
+    titleHeader.style.textAlign = 'center';
     form.appendChild(titleHeader);
 
     census.questions.forEach((q, idx) => {
         const qKey = `q_${idx}`;
         
         const qCard = document.createElement('div');
-        qCard.className = 'result-card';
-        qCard.style.marginBottom = '30px';
-        qCard.innerHTML = `<h3>${idx + 1}. ${q.text}</h3>`;
+        qCard.className = 'surface-card code-card';
+        qCard.style.marginBottom = '20px';
+        qCard.innerHTML = `<h3 style="font-size: 1.5rem; margin-bottom: 15px;">${idx + 1}. ${q.text}</h3>`;
 
-        // Check if Text Response Type
         if (q.type === 'text') {
             const listDiv = document.createElement('div');
-            listDiv.style.marginTop = '10px';
             listDiv.style.display = 'flex';
             listDiv.style.flexDirection = 'column';
-            listDiv.style.gap = '8px';
+            listDiv.style.gap = '10px';
 
             let hasAnswers = false;
             responses.forEach(r => {
@@ -273,11 +281,10 @@ async function renderGraphResults(census, container) {
                 if (ans && ans.trim() !== '') {
                     hasAnswers = true;
                     const p = document.createElement('div');
-                    p.style.padding = '10px';
-                    p.style.backgroundColor = 'rgba(191, 8, 17, 0.1)';
-                    p.style.border = '1px solid var(--main, #bf0811)';
-                    p.style.borderRadius = '5px';
-                    p.style.color = '#111';
+                    p.className = 'code-input'; 
+                    p.style.marginTop = '0';
+                    p.style.border = '2px solid oklch(0.968 0.008 60 / 40%)';
+                    p.style.color = 'var(--muted-foreground)';
                     p.textContent = ans;
                     listDiv.appendChild(p);
                 }
@@ -302,7 +309,7 @@ async function renderGraphResults(census, container) {
 
         const chartWrapper = document.createElement('div');
         chartWrapper.style.position = 'relative';
-        chartWrapper.style.height = '180px'; // Made graph smaller
+        chartWrapper.style.height = '180px';
         chartWrapper.style.width = '100%';
         
         const canvas = document.createElement('canvas');
@@ -328,33 +335,42 @@ async function renderGraphResults(census, container) {
                     datasets: [{
                         label: 'Votes',
                         data: dataValues,
-                        backgroundColor: '#bf0811', 
+                        backgroundColor: '#bf0811',
                         borderWidth: 0,
                         borderRadius: 4
                     }]
                 },
-                plugins: [insideLabelsPlugin], // Call our custom plugin
+                plugins: [insideLabelsPlugin],
                 options: {
+                    events: [],
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            display: false // Hide outside names
-                        },
+                        y: { display: false },
                         x: { 
                             beginAtZero: true, 
-                            ticks: { stepSize: 1 } 
+                            ticks: { stepSize: 1, color: '#ffffff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
                         }
                     },
                     plugins: {
                         legend: { display: false },
-                        tooltip: { enabled: true }
+                        tooltip: { enabled: false }
                     }
                 }
             });
         }
     });
+
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'btn-pop secondary';
+    backBtn.style.width = '100%';
+    backBtn.style.marginTop = '10px';
+    backBtn.textContent = 'Back to Home';
+    backBtn.onclick = () => window.location.href = 'index.html';
+    form.appendChild(backBtn);
 
     container.appendChild(form);
 }
