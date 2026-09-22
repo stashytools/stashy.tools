@@ -21,7 +21,7 @@ const insideLabelsPlugin = {
 };
 
 function cleanUrlError(message) {
-    loadToast(message);
+    // loadToast(message);
     const title = document.getElementById('title');
     const content = document.getElementById('census-content');
 
@@ -365,7 +365,7 @@ async function renderGraphResults(census, container) {
 
     const backBtn = document.createElement('button');
     backBtn.type = 'button';
-    backBtn.className = 'btn-pop secondary';
+    backBtn.className = 'btn-pop small';
     backBtn.style.width = '100%';
     backBtn.style.marginTop = '10px';
     backBtn.textContent = 'Back to Home';

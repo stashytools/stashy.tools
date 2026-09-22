@@ -142,20 +142,19 @@
       margin-bottom: 1.25rem;
       font-weight: 700;
       cursor: pointer;
-      transition: background 150ms ease, transform 150ms ease;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    .suggestion-box:hover {
-      background: oklch(0.968 0.008 60);
-      transform: translateY(-2px);
-    }
-
     .suggestion-text {
       color: var(--deep);
       text-decoration: underline;
+      transition: scale 150ms ease;
+    }
+
+    .suggestion-text:hover {
+      scale: 1.01;
     }
 
     .modal-overlay {
@@ -187,7 +186,7 @@
     }
 
     .limit-banner {
-      background: #ffebe8;
+      background: oklch(0.968 0.008 60);
       border: 3px solid #bf0811;
       color: #5c0005;
       padding: 2rem;
@@ -250,8 +249,8 @@
             <button type="button" class="btn-pop secondary" id="add-q-btn">+ Add Question</button>
           </div>
 
-          <div id="suggestion-box" class="suggestion-box" style="display: none;" onclick="useSuggestion()">
-            Stuck? Try: <span id="suggestion-text" class="suggestion-text">...</span>
+          <div id="suggestion-box" class="suggestion-box" style="display: none;">
+            Stuck? Try: <span onclick="useSuggestion()" id="suggestion-text" class="suggestion-text">...</span>
           </div>
 
           <div id="questions-list"></div>
@@ -491,7 +490,7 @@
             </div>
 
             <label style="display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 0.95rem; cursor: pointer;">
-              <input type="checkbox" class="q-required" ${data ? (data.required ? 'checked' : '') : 'checked'}> required?
+              <input type="radio" class="q-required" ${data ? (data.required ? 'checked' : '') : 'checked'}> required?
             </label>
           </div>
 
