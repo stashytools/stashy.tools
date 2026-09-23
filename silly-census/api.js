@@ -144,7 +144,7 @@ function renderAnsweringGridForm(census, container) {
                 label.style.gap = '8px';
 
                 const input = document.createElement('input');
-                input.type = 'checkbox';
+                input.type = 'radio';
                 input.name = `q_${idx}`;
                 input.value = friend;
                 input.style.width = '18px';

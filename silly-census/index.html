@@ -77,11 +77,11 @@
     <section class="section wrap">
       <h2>Questions that start arguments</h2>
       <div class="questions">
-        <span class="question-chip">Most likely to  survive a zombie apocalypse</span>
-        <span class="question-chip">Most likely to be a content creator</span>
-        <span class="question-chip">Most likely to get married first</span>
-        <span class="question-chip">Most likely to get banned from the group chat</span>
-        <span class="question-chip">Most likely to miss plans</span>
+        <span id="example1" class="question-chip">Most likely to  survive a zombie apocalypse</span>
+        <span id="example2" class="question-chip">Most likely to be a content creator</span>
+        <span id="example3" class="question-chip">Most likely to get married first</span>
+        <span id="example4" class="question-chip">Most likely to get banned from the group chat</span>
+        <span id="example5" class="question-chip">Most likely to miss plans</span>
       </div>
     </section>
 
@@ -97,5 +97,21 @@
   </main>
 
   <div id="alert-holder"></div>
+
+  <script>
+  async function replaceExamples() {
+        const response = await fetch('../silly-census/suggestions.json');
+        const list = await response.json();
+        const shuffled = list.sort(() => 0.5 - Math.random());
+        
+        document.getElementById('example1').innerText = shuffled.slice(0, 1);
+        document.getElementById('example2').innerText = shuffled.slice(1, 2);
+        document.getElementById('example3').innerText = shuffled.slice(2, 3);
+        document.getElementById('example4').innerText = shuffled.slice(3, 4);
+        document.getElementById('example5').innerText = shuffled.slice(4, 5);
+    }
+
+    replaceExamples();
+  </script>
 </body>
 </html>
